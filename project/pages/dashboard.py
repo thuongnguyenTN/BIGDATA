@@ -18,7 +18,7 @@ from utils import (
     add_sma, fmt_price, fmt_volume,
 )
 
-# 4 mã chính theo đề bài
+# 4 mã sample
 PRIMARY_SYMBOLS = ["ACB", "STB", "OCB", "LPB"]
 
 

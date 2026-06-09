@@ -27,9 +27,9 @@ logger = logging.getLogger(__name__)
 
 # ── Chế độ kết nối ─────────────────────────────────────────
 # "dummy"  → sinh data giả, dev offline (mặc định)
-# "drill"  → Apache Drill qua REST/JDBC (BiMi cấp endpoint)
+# "drill"  → Apache Drill qua REST/JDBC (thiếu cấp endpoint)
 # "mysql"  → MySQL Local 127.0.0.1:3306/bigdata_stock
-DB_MODE: str = os.getenv("DB_MODE", "dummy")
+DB_MODE: str = os.getenv("DB_MODE", "drill")
 
 # ── Danh sách 4 mã theo đề bài ─────────────────────────────
 BANK_META: dict[str, dict] = {
@@ -37,7 +37,6 @@ BANK_META: dict[str, dict] = {
     "STB": {"name": "Sacombank",             "base": 32_100},
     "OCB": {"name": "Orient Commercial Bank","base": 13_800},
     "LPB": {"name": "LienVietPostBank",      "base": 16_200},
-    # Mở rộng nếu nhóm cào thêm
     "VCB": {"name": "Vietcombank",           "base": 82_500},
     "BID": {"name": "BIDV",                  "base": 47_300},
     "CTG": {"name": "VietinBank",            "base": 38_900},

@@ -31,28 +31,42 @@ def load_css(path: str = "style.css") -> None:
 _PLOTLY = dict(
     paper_bgcolor = "rgba(0,0,0,0)",
     plot_bgcolor  = "rgba(0,0,0,0)",
-    font          = dict(family="IBM Plex Sans, Segoe UI, sans-serif",
-                         color="#94A3B8", size=11),
-    margin        = dict(l=8, r=8, t=38, b=8),
+    font          = dict(family="Space Grotesk, Segoe UI, sans-serif",
+                         color="#7A92B8", size=11),
+    margin        = dict(l=8, r=8, t=40, b=8),
     hovermode     = "x unified",
-    hoverlabel    = dict(bgcolor="#1E293B", bordercolor="#3B82F6",
-                         font_size=12, font_color="#F1F5F9"),
-    xaxis = dict(showgrid=False, showline=False, zeroline=False,
-                 tickfont=dict(size=10, color="#475569"),
-                 rangeslider=dict(visible=False)),
-    yaxis = dict(showgrid=True, gridcolor="rgba(255,255,255,0.04)",
-                 showline=False, zeroline=False,
-                 tickfont=dict(size=10, color="#475569")),
-    legend = dict(bgcolor="rgba(30,41,59,0.85)",
-                  bordercolor="rgba(255,255,255,0.06)", borderwidth=1,
-                  font=dict(size=11, color="#94A3B8"),
-                  orientation="h", yanchor="bottom", y=-0.22,
-                  xanchor="left", x=0),
+    hoverlabel    = dict(bgcolor="#0D1520", bordercolor="#2563EB",
+                         font_size=12, font_color="#E8F0FE"),
+    xaxis = dict(
+        showgrid        = False,
+        showline        = False,
+        zeroline        = False,
+        gridcolor       = "rgba(59,130,246,0.04)",
+    ),
+    yaxis = dict(
+        showgrid        = True,
+        gridcolor       = "rgba(255,255,255,0.035)",
+        showline        = False,
+        zeroline        = False,
+    ),
+    legend = dict(
+        bgcolor       = "rgba(13,21,32,0.90)",
+        bordercolor   = "rgba(255,255,255,0.05)",
+        borderwidth   = 1,
+        font          = dict(size=11, color="#7A92B8"),
+        orientation   = "h",
+        yanchor       = "bottom",
+        y             = -0.24,
+        xanchor       = "left",
+        x             = 0,
+    ),
 )
 
-# Màu theo thứ tự ticker
-PALETTE = ["#3B82F6","#22C55E","#F59E0B","#EF4444",
-           "#A78BFA","#06B6D4","#F97316","#EC4899","#14B8A6"]
+# Màu palette
+PALETTE = [
+    "#3B82F6", "#10B981", "#F59E0B", "#EF4444",
+    "#8B5CF6", "#06B6D4", "#F97316", "#EC4899", "#14B8A6",
+]
 
 def _color(i: int) -> str:
     return PALETTE[i % len(PALETTE)]
@@ -72,8 +86,8 @@ def build_line_chart(
     normalize=True → chuẩn hóa base=100 để so sánh tương đối.
     Cột bắt buộc: symbol/ticker, date, close.
     """
-    fig  = go.Figure()
-    col  = "symbol" if "symbol" in df.columns else "ticker"
+    fig = go.Figure()
+    col = "symbol" if "symbol" in df.columns else "ticker"
 
     for i, sym in enumerate(symbols):
         sub = df[df[col] == sym].copy().sort_values("date")
@@ -89,7 +103,7 @@ def build_line_chart(
             name = sym,
             mode = "lines",
             line = dict(color=_color(i), width=2.2),
-            hovertemplate = (
+            hovertemplate=(
                 f"<b>{sym}</b><br>%{{x|%d/%m/%Y}}<br>"
                 + ("Norm: %{y:.2f}<extra></extra>" if normalize
                    else "Giá: %{y:,.0f}₫<extra></extra>")
@@ -97,7 +111,9 @@ def build_line_chart(
         ))
 
     fig.update_layout(**_PLOTLY, height=height,
-                      title=dict(text=title, font=dict(size=13, color="#64748B")))
+                      title=dict(text=title, font=dict(size=13, color="#3D5478")))
+    fig.update_xaxes(tickfont=dict(size=10, color="#3D5478"), rangeslider_visible=False)
+    fig.update_yaxes(tickfont=dict(size=10, color="#3D5478"))
     return fig
 
 
@@ -112,19 +128,20 @@ def build_volume_chart(
     if sub.empty:
         return go.Figure()
 
-    colors = np.where(sub["close"].diff().fillna(0) >= 0,
-                      "#22C55E", "#EF4444")
+    colors = np.where(sub["close"].diff().fillna(0) >= 0, "#10B981", "#EF4444")
 
     fig = go.Figure(go.Bar(
         x             = sub["date"],
         y             = sub["volume"],
         marker_color  = colors,
-        opacity       = 0.72,
+        opacity       = 0.70,
         hovertemplate = "%{x|%d/%m/%Y}<br>Vol: %{y:,.0f}<extra></extra>",
     ))
-    fig.update_layout(**_PLOTLY, height=height, bargap=0.12,
+    fig.update_layout(**_PLOTLY, height=height, bargap=0.15,
                       title=dict(text="Khối lượng giao dịch",
-                                 font=dict(size=13, color="#64748B")))
+                                 font=dict(size=13, color="#3D5478")))
+    fig.update_xaxes(tickfont=dict(size=10, color="#3D5478"), rangeslider_visible=False)
+    fig.update_yaxes(tickfont=dict(size=10, color="#3D5478"))
     return fig
 
 
@@ -136,12 +153,10 @@ def build_sma_chart(
 ) -> go.Figure:
     """
     Giá đóng cửa + đường SMA overlay.
-    Cột đầu vào: close (từ tbl_raw_stock hoặc avg_close_price từ tbl_stock_analysis).
     """
-    col  = "symbol" if "symbol" in df.columns else "ticker"
-    sub  = df[df[col] == symbol].copy().sort_values("date")
+    col = "symbol" if "symbol" in df.columns else "ticker"
+    sub = df[df[col] == symbol].copy().sort_values("date")
 
-    # Dùng avg_close_price nếu đây là dữ liệu analysis
     if "avg_close_price" in sub.columns and "close" not in sub.columns:
         sub = sub.rename(columns={"avg_close_price": "close"})
 
@@ -153,38 +168,40 @@ def build_sma_chart(
 
     fig = go.Figure()
     fig.add_trace(go.Scatter(
-        x    = sub["date"],
-        y    = sub["close"],
-        name = "Close",
-        mode = "lines",
-        line = dict(color="#3B82F6", width=2.2),
-        fill = "tozeroy",
-        fillcolor = "rgba(59,130,246,0.05)",
+        x             = sub["date"],
+        y             = sub["close"],
+        name          = "Close",
+        mode          = "lines",
+        line          = dict(color="#3B82F6", width=2.2),
+        fill          = "tozeroy",
+        fillcolor     = "rgba(37,99,235,0.045)",
         hovertemplate = "Giá: %{y:,.0f}₫<extra></extra>",
     ))
 
     sma_style = {
-        20:  dict(color="#22C55E", dash="solid",  width=1.6),
-        50:  dict(color="#F59E0B", dash="dot",    width=1.6),
-        200: dict(color="#EF4444", dash="dash",   width=1.6),
+        20:  dict(color="#10B981", dash="solid", width=1.6),
+        50:  dict(color="#F59E0B", dash="dot",   width=1.6),
+        200: dict(color="#EF4444", dash="dash",  width=1.6),
     }
     for w in windows:
         if f"sma{w}" not in sub.columns:
             continue
         fig.add_trace(go.Scatter(
-            x    = sub["date"],
-            y    = sub[f"sma{w}"],
-            name = f"SMA {w}",
-            mode = "lines",
-            line = sma_style.get(w, dict(color="#A78BFA", dash="dot", width=1.6)),
+            x             = sub["date"],
+            y             = sub[f"sma{w}"],
+            name          = f"SMA {w}",
+            mode          = "lines",
+            line          = sma_style.get(w, dict(color="#8B5CF6", dash="dot", width=1.6)),
             hovertemplate = f"SMA{w}: %{{y:,.0f}}₫<extra></extra>",
         ))
 
     fig.update_layout(
         **_PLOTLY, height=height,
         title=dict(text=f"{symbol} — Close & SMA",
-                   font=dict(size=13, color="#64748B")),
+                   font=dict(size=13, color="#3D5478")),
     )
+    fig.update_xaxes(tickfont=dict(size=10, color="#3D5478"), rangeslider_visible=False)
+    fig.update_yaxes(tickfont=dict(size=10, color="#3D5478"))
     return fig
 
 
@@ -195,7 +212,6 @@ def build_analysis_bar(
 ) -> go.Figure:
     """
     Bar chart avg_close_price theo thời gian từ tbl_stock_analysis.
-    Hiển thị kết quả MapReduce trực tiếp.
     """
     col = "symbol" if "symbol" in df.columns else "ticker"
     sub = df[df[col] == symbol].copy().sort_values(
@@ -205,27 +221,31 @@ def build_analysis_bar(
     price_col = "avg_close_price" if "avg_close_price" in sub.columns else "close"
 
     fig = go.Figure(go.Bar(
-        x            = sub[date_col],
-        y            = sub[price_col],
-        marker_color = "#3B82F6",
-        opacity      = 0.8,
-        hovertemplate= "%{x|%d/%m/%Y}<br>Avg Close: %{y:,.0f}₫<extra></extra>",
+        x             = sub[date_col],
+        y             = sub[price_col],
+        marker_color  = "#3B82F6",
+        opacity       = 0.78,
+        hovertemplate = "%{x|%d/%m/%Y}<br>Avg Close: %{y:,.0f}₫<extra></extra>",
     ))
     fig.update_layout(
         **_PLOTLY, height=height,
         title=dict(text=f"{symbol} — avg_close_price (MapReduce result)",
-                   font=dict(size=13, color="#64748B")),
+                   font=dict(size=13, color="#3D5478")),
     )
+    fig.update_xaxes(tickfont=dict(size=10, color="#3D5478"), rangeslider_visible=False)
+    fig.update_yaxes(tickfont=dict(size=10, color="#3D5478"))
     return fig
 
 
 def build_volatility_heatmap(df: pd.DataFrame, height: int = 260) -> go.Figure:
     """Heatmap biến động hàng tháng theo mã."""
-    col   = "symbol" if "symbol" in df.columns else "ticker"
-    df2   = df.copy()
+    col  = "symbol" if "symbol" in df.columns else "ticker"
+    df2  = df.copy()
     df2["month"] = pd.to_datetime(df2["date"]).dt.to_period("M").astype(str)
-    df2["pct"]   = (df2.groupby(col)["close"].pct_change().abs() * 100
-                    if "close" in df2.columns else 0)
+    df2["pct"]   = (
+        df2.groupby(col)["close"].pct_change().abs() * 100
+        if "close" in df2.columns else 0
+    )
 
     pivot = (
         df2.groupby([col, "month"])["pct"]
@@ -238,19 +258,29 @@ def build_volatility_heatmap(df: pd.DataFrame, height: int = 260) -> go.Figure:
         z          = pivot.values,
         x          = pivot.columns.tolist(),
         y          = pivot.index.tolist(),
-        colorscale = [[0,"#0F172A"],[0.4,"#1D4ED8"],[1,"#3B82F6"]],
-        hovertemplate = "<b>%{y}</b> | %{x}<br>Vol: %{z:.3f}%<extra></extra>",
-        showscale  = True,
-        colorbar   = dict(len=0.8, thickness=10,
-                          tickfont=dict(size=9, color="#475569")),
+        colorscale = [
+            [0,   "#080D14"],
+            [0.3, "#0F2C5A"],
+            [0.6, "#1D4ED8"],
+            [1,   "#60A5FA"],
+        ],
+        hovertemplate = "<b>%{y}</b> | %{x}<br>Volatility: %{z:.3f}%<extra></extra>",
+        showscale     = True,
+        colorbar      = dict(
+            len          = 0.85,
+            thickness    = 10,
+            # tickfont     = dict(size=9, color="#3D5478"),
+            outlinecolor = "rgba(0,0,0,0)",
+        ),
     ))
     fig.update_layout(
         **_PLOTLY, height=height,
         title=dict(text="Heatmap biến động trung bình hàng tháng (%)",
-                   font=dict(size=13, color="#64748B")),
-        xaxis=dict(**_PLOTLY["xaxis"], tickangle=-40,
-                   tickfont=dict(size=9, color="#475569")),
+                   font=dict(size=13, color="#3D5478")),
     )
+    fig.update_xaxes(tickangle=-40, tickfont=dict(size=9, color="#3D5478"),
+                     rangeslider_visible=False)
+    fig.update_yaxes(tickfont=dict(size=9, color="#3D5478"))
     return fig
 
 
@@ -260,8 +290,8 @@ def fmt_price(v: float) -> str:
     return f"{v:,.0f}₫"
 
 def fmt_volume(v: float) -> str:
-    if v >= 1_000_000: return f"{v/1_000_000:.1f}M"
-    if v >= 1_000:     return f"{v/1_000:.0f}K"
+    if v >= 1_000_000: return f"{v / 1_000_000:.1f}M"
+    if v >= 1_000:     return f"{v / 1_000:.0f}K"
     return str(int(v))
 
 def fmt_pct(v: float) -> str:
@@ -270,7 +300,7 @@ def fmt_pct(v: float) -> str:
 
 # ── SMA helper ───────────────────────────────────────────────────────────────
 
-def add_sma(df: pd.DataFrame, windows: tuple[int,...] = (20, 50)) -> pd.DataFrame:
+def add_sma(df: pd.DataFrame, windows: tuple[int, ...] = (20, 50)) -> pd.DataFrame:
     """Thêm cột SMAxx vào dataframe, group theo symbol/ticker."""
     col    = "symbol" if "symbol" in df.columns else "ticker"
     frames = []
@@ -284,19 +314,18 @@ def add_sma(df: pd.DataFrame, windows: tuple[int,...] = (20, 50)) -> pd.DataFram
 
 def compute_stats(df: pd.DataFrame, symbol: str) -> dict:
     """Tính chỉ số thống kê 1 mã — dùng cho trang Analytics."""
-    col  = "symbol" if "symbol" in df.columns else "ticker"
-    sub  = df[df[col] == symbol].copy().sort_values("date")
+    col = "symbol" if "symbol" in df.columns else "ticker"
+    sub = df[df[col] == symbol].copy().sort_values("date")
     if sub.empty:
         return {}
 
-    sub  = add_sma(sub, (20, 50))
-    last = sub.iloc[-1]
-
+    sub     = add_sma(sub, (20, 50))
+    last    = sub.iloc[-1]
     ret     = (sub["close"].iloc[-1] / sub["close"].iloc[0] - 1) * 100
     vol_ann = sub["close"].pct_change().std() * np.sqrt(252) * 100
 
-    vol_idx     = sub["volume"].idxmax() if "volume" in sub.columns else None
-    var_idx     = sub["close"].pct_change().abs().idxmax()
+    vol_idx = sub["volume"].idxmax() if "volume" in sub.columns else None
+    var_idx = sub["close"].pct_change().abs().idxmax()
 
     return {
         "symbol":       symbol,
@@ -316,17 +345,19 @@ def compute_stats(df: pd.DataFrame, symbol: str) -> dict:
 
 # ── HTML component builders ──────────────────────────────────────────────────
 
-def render_topbar(title: str, subtitle: str) -> None:
-    now = datetime.now().strftime("%H:%M:%S  %d/%m/%Y")
+def render_topbar(title: str, subtitle: str, breadcrumb: str = "") -> None:
+    now = datetime.now().strftime("%H:%M  %d/%m/%Y")
+    bc  = breadcrumb or "Đồ án Dữ liệu Lớn"
     st.markdown(f"""
     <div class="topbar">
-      <div>
+      <div class="topbar-left">
+        <div class="t-breadcrumb">📊 BigData Stock &nbsp;›&nbsp; {bc}</div>
         <div class="t-title">{title}</div>
         <div class="t-sub">{subtitle}</div>
       </div>
-      <div class="t-right">
+      <div class="topbar-right">
         <span class="live-pill">
-          <span class="dot dot-green"></span>LIVE
+          <span class="dot dot-green dot-pulse"></span>LIVE
         </span>
         <span class="timestamp">{now}</span>
       </div>
@@ -350,40 +381,43 @@ def render_kpi_card(
       <div class="kpi-name">{name}</div>
       <div class="kpi-price">{fmt_price(price)}</div>
       <div class="kpi-change {cls}">{arrow} {abs(pct_chg):.2f}%</div>
-      <div class="kpi-vol">Vol: {fmt_volume(volume)}</div>
+      <div class="kpi-vol">Vol &nbsp;{fmt_volume(volume)}</div>
     </div>
     """, unsafe_allow_html=True)
 
 
+# Giữ lại cho compat với app.py cũ nếu cần
 def render_sidebar_logo() -> None:
     st.markdown("""
-    <div class="sb-logo">
-      <div class="logo-icon">📊</div>
-      <div class="logo-title">Financial<br>Big Data</div>
-      <div class="logo-sub">Banking Analytics Platform</div>
+    <div class="sb-brand">
+      <div class="sb-brand-row">
+        <div class="sb-icon">📊</div>
+        <div>
+          <div class="sb-title">BigData Stock<br>Dashboard</div>
+        </div>
+      </div>
     </div>
     """, unsafe_allow_html=True)
 
 
 def render_sidebar_footer(db_mode: str, connected: bool) -> None:
-    dot = "dot-green" if connected else "dot-red"
+    dot    = "dot-green" if connected else "dot-red"
     status = "Online" if connected else "Offline"
-    source_map = {
+    source = {
         "dummy": "Demo / Dummy Data",
         "mysql": "MySQL · bigdata_stock",
         "drill": "Apache Drill",
-    }
-    source = source_map.get(db_mode, db_mode)
+    }.get(db_mode, db_mode)
     st.markdown(f"""
     <div class="sb-footer">
-      <div class="sf-row">
+      <div class="sb-footer-row">
         <span>Data Source</span>
-        <span class="sf-val">{source}</span>
+        <span class="sb-footer-val">{source}</span>
       </div>
-      <div class="sf-row">
+      <div class="sb-footer-row">
         <span>Connection</span>
-        <span class="sf-val">
-          <span class="dot {dot}"></span>{status}
+        <span class="sb-footer-val">
+          <span class="dot {dot}"></span>&nbsp;{status}
         </span>
       </div>
     </div>
@@ -391,7 +425,7 @@ def render_sidebar_footer(db_mode: str, connected: bool) -> None:
 
 
 def card_open(title: str, badge: str = "", badge_cls: str = "badge-blue") -> None:
-    badge_html = (f'<span class="badge {badge_cls}">{badge}</span>' if badge else "")
+    badge_html = f'<span class="badge {badge_cls}">{badge}</span>' if badge else ""
     st.markdown(f"""
     <div class="card">
       <div class="card-header">

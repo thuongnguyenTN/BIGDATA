@@ -32,18 +32,22 @@ def _candlestick(df: pd.DataFrame, symbol: str, height: int = 420) -> go.Figure:
         high  = sub["high"],
         low   = sub["low"],
         close = sub["close"],
-        increasing_line_color  = "#22C55E",
+        increasing_line_color  = "#10B981",
         decreasing_line_color  = "#EF4444",
-        increasing_fillcolor   = "#22C55E",
+        increasing_fillcolor   = "#10B981",
         decreasing_fillcolor   = "#EF4444",
         hovertext = pd.to_datetime(sub["date"]).dt.strftime("%d/%m/%Y"),
     ))
+
     fig.update_layout(
-        **_PLOTLY, height=height,
-        title=dict(text=f"{symbol} — Candlestick",
-                   font=dict(size=13, color="#64748B")),
-        xaxis=dict(**_PLOTLY["xaxis"], rangeslider=dict(visible=False)),
+        **_PLOTLY,
+        height = height,
+        title  = dict(text=f"{symbol} — Candlestick",
+                      font=dict(size=13, color="#3D5478")),
     )
+    fig.layout.xaxis.rangeslider.visible = False
+    fig.layout.xaxis.tickfont = dict(size=10, color="#3D5478")
+    fig.layout.yaxis.tickfont = dict(size=10, color="#3D5478")
     return fig
 
 
@@ -51,6 +55,7 @@ def render(db: DatabaseManager) -> None:
     render_topbar(
         "Stock Detail",
         "Phân tích chi tiết từng mã cổ phiếu ngân hàng",
+        breadcrumb="Stock Detail",
     )
 
     # ── Bộ lọc ────────────────────────────────────────────────
@@ -63,8 +68,8 @@ def render(db: DatabaseManager) -> None:
     with c1:
         symbol = st.selectbox(
             "Mã cổ phiếu",
-            options       = list(BANK_META.keys()),
-            format_func   = lambda s: f"{s} — {BANK_META[s]['name']}",
+            options     = list(BANK_META.keys()),
+            format_func = lambda s: f"{s} — {BANK_META[s]['name']}",
         )
     with c2:
         period = st.selectbox(
@@ -114,11 +119,11 @@ def render(db: DatabaseManager) -> None:
     section_label("Chỉ số chính")
     k1, k2, k3, k4, k5 = st.columns(5)
 
-    k1.metric("Giá hiện tại",   fmt_price(last["close"]),
+    k1.metric("Giá hiện tại",    fmt_price(last["close"]),
               delta=fmt_pct(ret))
-    k2.metric("Giá cao nhất",   fmt_price(df["close"].max()))
-    k3.metric("Giá thấp nhất",  fmt_price(df["close"].min()))
-    k4.metric("Volume cao nhất",fmt_volume(df["volume"].max())
+    k2.metric("Giá cao nhất",    fmt_price(df["close"].max()))
+    k3.metric("Giá thấp nhất",   fmt_price(df["close"].min()))
+    k4.metric("Volume cao nhất", fmt_volume(df["volume"].max())
               if "volume" in df.columns else "N/A")
     k5.metric("Volatility (ann.)", f"{vol_ann:.2f}%")
 
@@ -189,10 +194,11 @@ def render(db: DatabaseManager) -> None:
     if "volume" in preview.columns:
         preview["volume"] = preview["volume"].map(fmt_volume)
 
+    cols_show = (["date", "open", "high", "low", "close", "volume"]
+                 if all(c in preview.columns for c in ["open", "high", "low"])
+                 else ["date", "close", "volume"])
     st.dataframe(
-        preview[["date","open","high","low","close","volume"]
-                if all(c in preview.columns for c in ["open","high","low"])
-                else ["date","close","volume"]],
+        preview[cols_show],
         use_container_width=True,
         hide_index=True,
     )

@@ -58,13 +58,25 @@ def _risk_return_scatter(summary: pd.DataFrame, height: int = 320) -> go.Figure:
     fig.add_hline(y=0, line_dash="dot",
                   line_color="rgba(255,255,255,0.1)", line_width=1)
     fig.update_layout(
-        **_PLOTLY, height=height, showlegend=False,
-        title=dict(text="Risk vs Return",
-                   font=dict(size=13, color="#64748B")),
-        xaxis={**_PLOTLY["xaxis"],
-               "title": dict(text="Risk (price_variance %)", font=dict(size=11))},
-        yaxis={**_PLOTLY["yaxis"],
-               "title": dict(text="Return (%)", font=dict(size=11))},
+        **_PLOTLY,
+        height=height,
+        showlegend=False,
+        title=dict(
+            text="Risk vs Return",
+            font=dict(size=13, color="#64748B")
+        ),
+    )
+
+    fig.update_xaxes(
+        title_text="Risk (price_variance %)",
+        title_font=dict(size=11),
+        tickfont=dict(size=10, color="#3D5478")
+    )
+
+    fig.update_yaxes(
+        title_text="Return (%)",
+        title_font=dict(size=11),
+        tickfont=dict(size=10, color="#3D5478")
     )
     return fig
 
@@ -241,4 +253,4 @@ def render(db: DatabaseManager) -> None:
             use_container_width=True,
             config={"displayModeBar": False},
         )
-        st.markdown("</div>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)   
