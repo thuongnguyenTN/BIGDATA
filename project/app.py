@@ -18,16 +18,26 @@ st.set_page_config(
 
 # ── Imports sau set_page_config ──────────────────────────────────────────────
 from database import DatabaseManager
-from utils    import load_css, render_sidebar_logo, render_sidebar_footer
+from utils    import load_css
 
 from pages.dashboard    import render as page_dashboard
 from pages.stock_detail import render as page_stock_detail
 from pages.analytics    import render as page_analytics
 from pages.data_table   import render as page_data_table
-from pages.system       import render as page_system
+from pages.crud         import render as page_crud
 
 # ── Load CSS ─────────────────────────────────────────────────────────────────
 load_css("style.css")
+
+# ── Ẩn Streamlit multipage nav mặc định (phần list pages/ tự sinh) ───────────
+st.markdown("""
+<style>
+  /* Ẩn sidebar nav mặc định do Streamlit tự sinh từ thư mục pages/ */
+  [data-testid="stSidebarNav"] { display: none !important; }
+  section[data-testid="stSidebarNav"] { display: none !important; }
+  div[data-testid="stSidebarNavItems"] { display: none !important; }
+</style>
+""", unsafe_allow_html=True)
 
 # ── DB singleton ─────────────────────────────────────────────────────────────
 @st.cache_resource(show_spinner=False)
@@ -37,31 +47,30 @@ def get_db() -> DatabaseManager:
 db        = get_db()
 connected = db.connect()
 
-# ── Nav config ───────────────────────────────────────────────────────────────
+# ── Nav config (bỏ System Status) ────────────────────────────────────────────
 NAV_ITEMS = [
-    ("🏠", "Dashboard",     "Tổng quan thị trường"),
-    ("📈", "Stock Detail",  "Phân tích kỹ thuật"),
-    ("📊", "Analytics",     "Phân tích chuyên sâu"),
-    ("🗄", "Data Table",    "Dữ liệu & Xuất CSV"),
-    ("⚙", "System Status", "Pipeline & Hệ thống"),
+    ("🏠", "Dashboard",    "Tổng quan thị trường"),
+    ("📈", "Stock Detail", "Phân tích kỹ thuật"),
+    ("📊", "Analytics",    "Phân tích chuyên sâu"),
+    ("🗄", "Data Table",   "Dữ liệu & Xuất CSV"),
+    ("✏️", "CRUD",         "Quản lý mã ngân hàng"),
 ]
 PAGE_KEYS = [label for _, label, _ in NAV_ITEMS]
 
 ROUTE_MAP = {
-    "Dashboard":     page_dashboard,
-    "Stock Detail":  page_stock_detail,
-    "Analytics":     page_analytics,
-    "Data Table":    page_data_table,
-    "System Status": page_system,
+    "Dashboard":    page_dashboard,
+    "Stock Detail": page_stock_detail,
+    "Analytics":    page_analytics,
+    "Data Table":   page_data_table,
+    "CRUD":         page_crud,
 }
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────
 with st.sidebar:
 
-    # Brand / Logo
     mode_label = {
         "dummy": "Demo Mode",
-        "mysql": "MySQL · Local",
+        "mysql": "MySQL · VM",
         "drill": "Apache Drill",
     }.get(db.mode, db.mode)
 
@@ -87,10 +96,8 @@ with st.sidebar:
     </div>
     """, unsafe_allow_html=True)
 
-    # Nav section header
     st.markdown('<div class="sb-section">Navigation</div>', unsafe_allow_html=True)
 
-    # Radio navigation (ẩn radio bullet, dùng label style)
     page = st.radio(
         "nav",
         PAGE_KEYS,
@@ -100,10 +107,8 @@ with st.sidebar:
         label_visibility="collapsed",
     )
 
-    # Spacer
-    st.markdown("<div style='min-height:120px'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='min-height:80px'></div>", unsafe_allow_html=True)
 
-    # DB / Pipeline info section
     st.markdown('<div class="sb-section">Hệ thống</div>', unsafe_allow_html=True)
 
     dot_cls    = "dot-green" if connected else "dot-red"
